@@ -11,7 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Daftarkan middleware LogActivity agar berjalan secara global
+        $middleware->append(\App\Http\Middleware\LogActivity::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
