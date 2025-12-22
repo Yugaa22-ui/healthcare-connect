@@ -3,6 +3,9 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DoctorController;
+use App\Http\Controllers\Api\ScheduleController;
+
+
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
@@ -11,5 +14,6 @@ Route::post('login', [AuthController::class, 'login']);
 Route::middleware('auth:api')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::apiResource('doctors', DoctorController::class);
+    Route::apiResource('schedules', ScheduleController::class);
     // Adji & Andika masukkan route CRUD mereka di bawah sini
 });
