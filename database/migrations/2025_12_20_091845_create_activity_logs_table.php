@@ -14,10 +14,9 @@ return new class extends Migration
         Schema::create('activity_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
-            $table->string('activity');
-            $table->string('method'); 
-            $table->string('url');
-            $table->ipAddress('ip_address')->nullable();
+            $table->string('action'); // <--- PASTIKAN BARIS INI ADA
+            $table->text('description')->nullable();
+            $table->string('ip_address')->nullable();
             $table->timestamps();
         });
     }
