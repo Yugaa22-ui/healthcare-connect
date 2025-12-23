@@ -5,28 +5,23 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
+use App\Models\ActivityLog;
 
 class LogActivity
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
 
-        // Hanya catat aktivitas yang merubah data (POST, PUT, DELETE)
-        if (in_array($request->method(), ['POST', 'PUT', 'DELETE', 'PATCH'])) {
-            \App\Models\ActivityLog::create([
-                'user_id'    => auth()->id(), 
-                'activity'   => 'User melakukan ' . $request->method() . ' pada ' . $request->path(),
-                'method'     => $request->method(),
-                'url'        => $request->fullUrl(),
-                'ip_address' => $request->ip(),
-            ]);
-        }
+        // Gunakan path lengkap agar tidak ada error 'Undefined Class'
+        \App\Models\ActivityLog::create([
+            // Jika belum login (saat proses login), user_id diisi NULL
+            'user_id'     => Auth::check() ? Auth::id() : null, 
+            'action'      => $request->method() . ' ' . $request->path(),
+            'description' => 'Akses dari IP: ' . $request->ip(),
+            'ip_address'  => $request->ip(),
+        ]);
 
         return $response;
     }
