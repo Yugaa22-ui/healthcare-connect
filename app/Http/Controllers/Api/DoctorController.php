@@ -22,7 +22,15 @@ class DoctorController extends Controller
     // Tambah Dokter Baru
     public function store(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'specialist' => 'required|string',
+            'phone' => 'required',
+            'address' => 'required',
+        ]);
+
         $doctor = Doctor::create($request->all());
+        
         return response()->json([
             'success' => true,
             'message' => 'Dokter Berhasil Ditambahkan',
