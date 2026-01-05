@@ -6,23 +6,30 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
-use App\Models\ActivityLog;
 
 class LogActivity
 {
+    // 1. Jalankan request tanpa hambatan
     public function handle(Request $request, Closure $next): Response
     {
-        $response = $next($request);
+        return $next($request);
+    }
 
-        // Gunakan path lengkap agar tidak ada error 'Undefined Class'
-        \App\Models\ActivityLog::create([
-            // Jika belum login (saat proses login), user_id diisi NULL
-            'user_id'     => Auth::check() ? Auth::id() : null, 
-            'action'      => $request->method() . ' ' . $request->path(),
-            'description' => 'Akses dari IP: ' . $request->ip(),
-            'ip_address'  => $request->ip(),
-        ]);
+    // 2. Catat log SETELAH respon dikirim ke User (Postman)
+    public function terminate(Request $request, Response $response): void
+    {
+        try {
+            // Cek apakah user terautentikasi (sebelum sesi hancur sepenuhnya)
+            $userId = Auth::check() ? Auth::id() : null;
 
-        return $response;
+            \App\Models\ActivityLog::create([
+                'user_id'     => $userId, 
+                'action'      => $request->method() . ' ' . $request->path(),
+                'description' => 'Status Respon: ' . $response->getStatusCode(),
+                'ip_address'  => $request->ip(),
+            ]);
+        } catch (\Exception $e) {
+            // Abaikan error agar tidak merusak pengalaman user
+        }
     }
 }
