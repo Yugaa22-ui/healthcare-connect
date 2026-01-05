@@ -11,23 +11,35 @@ class LogActivity
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // 1. Tangkap ID user DI AWAL sebelum logout diproses
-        $userId = Auth::check() ? Auth::id() : null;
+        // 1. Ambil ID User di awal (antisipasi logout)
+        // Gunakan try-catch kecil di sini jika Auth bermasalah
+        $userId = null;
+        try {
+            if (Auth::check()) {
+                $userId = Auth::id();
+            }
+        } catch (\Exception $e) {
+            $userId = null;
+        }
 
-        // 2. Jalankan proses logout (atau aksi lainnya)
+        // 2. Jalankan request utama
         $response = $next($request);
 
-        // 3. Catat log setelah proses selesai
+        // 3. Simpan Log (Hanya jika bukan method GET untuk mengurangi beban DB, optional)
+        // Pastikan proses ini tidak menggagalkan response utama
         try {
-            \App\Models\ActivityLog::create([
-                'user_id'     => $userId, 
-                'action'      => $request->method() . ' ' . $request->path(),
-                'description' => 'Akses sistem oleh ' . ($userId ? 'User ID: '.$userId : 'Guest'),
-                'ip_address'  => $request->ip(),
-            ]);
+            // Cek apakah class model ada untuk menghindari 'Class not found'
+            if (class_exists('\App\Models\ActivityLog')) {
+                \App\Models\ActivityLog::create([
+                    'user_id'     => $userId, 
+                    'action'      => $request->method() . ' ' . $request->path(),
+                    'description' => 'Akses sistem: ' . $request->header('User-Agent'),
+                    'ip_address'  => $request->ip(),
+                ]);
+            }
         } catch (\Exception $e) {
-            // Jika pencatatan log gagal, jangan biarkan aplikasi utama error
-            \Log::error('Gagal mencatat log: ' . $e->getMessage());
+            // Jangan throw error, agar Dika tetap dapat response sukses di Postman
+            \Log::warning('Log Activity Gagal: ' . $e->getMessage());
         }
 
         return $response;
