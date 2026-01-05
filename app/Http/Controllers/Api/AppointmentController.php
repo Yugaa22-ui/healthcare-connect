@@ -48,14 +48,17 @@ class AppointmentController extends Controller
     }
 
     // Fungsi melihat daftar janji temu milik saya (Pasien)
-    public function index()
+  public function index()
     {
-        $appointments = Appointment::with(['doctor', 'schedule'])
-            ->where('user_id', Auth::id())
-            ->get();
+        // Jika ingin melihat SEMUA data (untuk keperluan testing/admin)
+        $appointments = Appointment::with(['doctor', 'schedule'])->get();
+
+        // JIKA ingin filter per user, pastikan login dengan akun yang punya data
+        // $appointments = Appointment::with(['doctor', 'schedule'])->where('user_id', Auth::id())->get();
 
         return response()->json([
             'success' => true,
+            'message' => 'Daftar janji temu berhasil diambil',
             'data' => $appointments
         ]);
     }
