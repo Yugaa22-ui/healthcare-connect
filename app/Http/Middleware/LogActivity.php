@@ -6,22 +6,29 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
-use App\Models\ActivityLog;
 
 class LogActivity
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // 1. Tangkap ID user DI AWAL sebelum logout diproses
+        $userId = Auth::check() ? Auth::id() : null;
+
+        // 2. Jalankan proses logout (atau aksi lainnya)
         $response = $next($request);
 
-        // Gunakan path lengkap agar tidak ada error 'Undefined Class'
-        \App\Models\ActivityLog::create([
-            // Jika belum login (saat proses login), user_id diisi NULL
-            'user_id'     => Auth::check() ? Auth::id() : null, 
-            'action'      => $request->method() . ' ' . $request->path(),
-            'description' => 'Akses dari IP: ' . $request->ip(),
-            'ip_address'  => $request->ip(),
-        ]);
+        // 3. Catat log setelah proses selesai
+        try {
+            \App\Models\ActivityLog::create([
+                'user_id'     => $userId, 
+                'action'      => $request->method() . ' ' . $request->path(),
+                'description' => 'Akses sistem oleh ' . ($userId ? 'User ID: '.$userId : 'Guest'),
+                'ip_address'  => $request->ip(),
+            ]);
+        } catch (\Exception $e) {
+            // Jika pencatatan log gagal, jangan biarkan aplikasi utama error
+            \Log::error('Gagal mencatat log: ' . $e->getMessage());
+        }
 
         return $response;
     }

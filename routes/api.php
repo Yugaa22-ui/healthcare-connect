@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController; // Tambahkan 'Api\' di sini
+use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DoctorController;
 use App\Http\Controllers\Api\ScheduleController;
