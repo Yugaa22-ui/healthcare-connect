@@ -9,39 +9,27 @@ use Illuminate\Support\Facades\Auth;
 
 class LogActivity
 {
+    // 1. Jalankan request tanpa hambatan
     public function handle(Request $request, Closure $next): Response
     {
-        // 1. Ambil ID User di awal (antisipasi logout)
-        // Gunakan try-catch kecil di sini jika Auth bermasalah
-        $userId = null;
+        return $next($request);
+    }
+
+    // 2. Catat log SETELAH respon dikirim ke User (Postman)
+    public function terminate(Request $request, Response $response): void
+    {
         try {
-            if (Auth::check()) {
-                $userId = Auth::id();
-            }
+            // Cek apakah user terautentikasi (sebelum sesi hancur sepenuhnya)
+            $userId = Auth::check() ? Auth::id() : null;
+
+            \App\Models\ActivityLog::create([
+                'user_id'     => $userId, 
+                'action'      => $request->method() . ' ' . $request->path(),
+                'description' => 'Status Respon: ' . $response->getStatusCode(),
+                'ip_address'  => $request->ip(),
+            ]);
         } catch (\Exception $e) {
-            $userId = null;
+            // Abaikan error agar tidak merusak pengalaman user
         }
-
-        // 2. Jalankan request utama
-        $response = $next($request);
-
-        // 3. Simpan Log (Hanya jika bukan method GET untuk mengurangi beban DB, optional)
-        // Pastikan proses ini tidak menggagalkan response utama
-        try {
-            // Cek apakah class model ada untuk menghindari 'Class not found'
-            if (class_exists('\App\Models\ActivityLog')) {
-                \App\Models\ActivityLog::create([
-                    'user_id'     => $userId, 
-                    'action'      => $request->method() . ' ' . $request->path(),
-                    'description' => 'Akses sistem: ' . $request->header('User-Agent'),
-                    'ip_address'  => $request->ip(),
-                ]);
-            }
-        } catch (\Exception $e) {
-            // Jangan throw error, agar Dika tetap dapat response sukses di Postman
-            \Log::warning('Log Activity Gagal: ' . $e->getMessage());
-        }
-
-        return $response;
     }
 }
